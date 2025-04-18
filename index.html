@@ -104,10 +104,14 @@
         const loader = new FBXLoader();
         console.log('Inicjalizacja ładowania modelu...');
         // Ustal bazową ścieżkę w zależności od środowiska
-        const basePath = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? ''
-            : '/three-fbx';
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const basePath = isLocal ? '' : '/three-fbx';
         const fbxPath = `${basePath}/${MODEL_FILE}`;
+        
+        // Logowanie informacji o środowisku
+        console.log('Hostname:', window.location.hostname);
+        console.log('Base path:', basePath);
+        console.log('Full path:', fbxPath);
         console.log('Próba załadowania pliku:', fbxPath);
         loader.load(fbxPath,
             function (object) {
