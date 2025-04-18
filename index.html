@@ -110,14 +110,13 @@
             fbxPath = MODEL_FILE;
         } else {
             // Użyj bezpośredniego linku do raw content na GitHub
-            fbxPath = `https://media.githubusercontent.com/media/konradmakosa/three-fbx/main/${MODEL_FILE}`;
+            fbxPath = `https://raw.githubusercontent.com/konradmakosa/three-fbx/main/${MODEL_FILE}`;
         }
         
         // Logowanie informacji o środowisku
         console.log('Hostname:', window.location.hostname);
-        console.log('Base path:', basePath);
-        console.log('Full path:', fbxPath);
-        console.log('Próba załadowania pliku:', fbxPath);
+        console.log('Tryb lokalny:', isLocal);
+        console.log('Ścieżka do pliku:', fbxPath);
         loader.load(fbxPath,
             function (object) {
                 console.log('Model załadowany pomyślnie!');
