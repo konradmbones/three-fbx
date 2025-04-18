@@ -103,9 +103,11 @@
         // Loader FBX
         const loader = new FBXLoader();
         console.log('Inicjalizacja ładowania modelu...');
-        const fbxPath = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? MODEL_FILE
-            : '/three-fbx/' + MODEL_FILE;
+        // Ustal bazową ścieżkę w zależności od środowiska
+        const basePath = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? ''
+            : '/three-fbx';
+        const fbxPath = `${basePath}/${MODEL_FILE}`;
         console.log('Próba załadowania pliku:', fbxPath);
         loader.load(fbxPath,
             function (object) {
