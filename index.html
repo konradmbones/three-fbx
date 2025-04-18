@@ -106,7 +106,8 @@
         
         // Ustal ścieżkę do pliku w zależności od środowiska
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const fbxPath = isLocal ? MODEL_FILE : `https://raw.githubusercontent.com/konradmbones/three-fbx/main/${MODEL_FILE}`;
+        // Próbuj pobrać z forka
+        const fbxPath = isLocal ? MODEL_FILE : `https://raw.githubusercontent.com/konradmakosa/three-fbx/main/${MODEL_FILE}`;
         
         // Logowanie informacji o środowisku
         console.log('Hostname:', window.location.hostname);
