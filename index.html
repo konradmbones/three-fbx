@@ -103,15 +103,10 @@
         // Loader FBX
         const loader = new FBXLoader();
         console.log('Inicjalizacja ładowania modelu...');
+        
         // Ustal ścieżkę do pliku w zależności od środowiska
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        let fbxPath;
-        if (isLocal) {
-            fbxPath = MODEL_FILE;
-        } else {
-            // Użyj bezpośredniego linku do raw content na GitHub
-            fbxPath = `https://raw.githubusercontent.com/konradmakosa/three-fbx/main/${MODEL_FILE}`;
-        }
+        const fbxPath = isLocal ? MODEL_FILE : `https://raw.githubusercontent.com/konradmbones/three-fbx/main/${MODEL_FILE}`;
         
         // Logowanie informacji o środowisku
         console.log('Hostname:', window.location.hostname);
