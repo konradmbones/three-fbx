@@ -59,10 +59,19 @@
         const loader = new FBXLoader();
         loader.load('workshop_01_001_KM.fbx',
             function (object) {
+                // Tworzymy nowy, jednolity materiał
+                const uniformMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x808080,  // Kolor szary
+                    roughness: 0.7,    // Szorstkość powierzchni
+                    metalness: 0.3     // Metaliczność
+                });
+
                 object.traverse(function (child) {
                     if (child.isMesh) {
                         child.castShadow = true;
                         child.receiveShadow = true;
+                        // Zastępujemy materiał obiektu nowym, jednolitym materiałem
+                        child.material = uniformMaterial;
                     }
                 });
                 // ukryj spinner i przestań animować dots
