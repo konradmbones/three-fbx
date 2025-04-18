@@ -8,6 +8,36 @@
         body { margin: 0; overflow: hidden; background: #222; }
         #info { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 1.2rem; z-index: 1; }
         canvas { display: block; }
+        #scene-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            max-width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        #scene-info h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+        }
+        #scene-info ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #scene-info li {
+            margin: 5px 0;
+            padding-left: 15px;
+            font-size: 12px;
+        }
+        #scene-info .mesh { color: #8ff; }
+        #scene-info .bone { color: #f8f; }
+        #scene-info .marker { color: #ff8; }
         /* spinner */
         #spinner { position: absolute; bottom: 80px; left: 50%; width: 40px; height: 40px; margin-left: -20px; border: 4px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; z-index: 1; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -19,6 +49,10 @@
 <body>
     <div id="info">Wyświetlanie pliku FBX: <b>workshop_01_001_KM.fbx</b></div>
     <div id="spinner"></div>
+    <div id="scene-info">
+        <h3>Struktura modelu:</h3>
+        <ul id="scene-tree"></ul>
+    </div>
     <script type="importmap">
     {
       "imports": {
@@ -66,13 +100,67 @@
                     metalness: 0.3     // Metaliczność
                 });
 
+                // Analizuj strukturę modelu
+                const sceneTree = document.getElementById('scene-tree');
+                const modelInfo = new Map();
+
                 object.traverse(function (child) {
                     if (child.isMesh) {
                         child.castShadow = true;
                         child.receiveShadow = true;
-                        // Zastępujemy materiał obiektu nowym, jednolitym materiałem
                         child.material = uniformMaterial;
+                        
+                        // Zapisz informację o meshu
+                        const parentName = child.parent ? child.parent.name || 'Unnamed Group' : 'Root';
+                        if (!modelInfo.has(parentName)) {
+                            modelInfo.set(parentName, { meshes: [], bones: [], markers: [] });
+                        }
+                        modelInfo.get(parentName).meshes.push(child.name || 'Unnamed Mesh');
+                    } else if (child.isBone) {
+                        const parentName = child.parent ? child.parent.parent?.name || 'Unnamed Armature' : 'Root';
+                        if (!modelInfo.has(parentName)) {
+                            modelInfo.set(parentName, { meshes: [], bones: [], markers: [] });
+                        }
+                        modelInfo.get(parentName).bones.push(child.name || 'Unnamed Bone');
+                    } else if (child.name && child.name.toLowerCase().includes('marker')) {
+                        const parentName = child.parent ? child.parent.name || 'Unnamed Group' : 'Root';
+                        if (!modelInfo.has(parentName)) {
+                            modelInfo.set(parentName, { meshes: [], bones: [], markers: [] });
+                        }
+                        modelInfo.get(parentName).markers.push(child.name);
                     }
+                });
+
+                // Wyświetl informacje w panelu
+                sceneTree.innerHTML = '';
+                for (const [groupName, info] of modelInfo) {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong>${groupName}</strong>`;
+                    const ul = document.createElement('ul');
+                    
+                    if (info.meshes.length > 0) {
+                        const meshLi = document.createElement('li');
+                        meshLi.className = 'mesh';
+                        meshLi.textContent = `Meshes (${info.meshes.length}): ${info.meshes.join(', ')}`;
+                        ul.appendChild(meshLi);
+                    }
+                    
+                    if (info.bones.length > 0) {
+                        const boneLi = document.createElement('li');
+                        boneLi.className = 'bone';
+                        boneLi.textContent = `Bones (${info.bones.length}): ${info.bones.join(', ')}`;
+                        ul.appendChild(boneLi);
+                    }
+                    
+                    if (info.markers.length > 0) {
+                        const markerLi = document.createElement('li');
+                        markerLi.className = 'marker';
+                        markerLi.textContent = `Markers (${info.markers.length}): ${info.markers.join(', ')}`;
+                        ul.appendChild(markerLi);
+                    }
+                    
+                    li.appendChild(ul);
+                    sceneTree.appendChild(li);
                 });
                 // ukryj spinner i przestań animować dots
                 const infoEl = document.getElementById('info');
