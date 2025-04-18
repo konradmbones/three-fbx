@@ -47,7 +47,7 @@
     </style>
 </head>
 <body>
-    <div id="info">Wyświetlanie pliku FBX: <b>workshop_01_001_KM.fbx</b></div>
+    <div id="info">Wczytywanie modelu...</div>
     <div id="spinner"></div>
     <div id="scene-info">
         <h3>Struktura modelu:</h3>
@@ -64,6 +64,17 @@
     import * as THREE from 'three';
     import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/controls/OrbitControls.js';
     import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/loaders/FBXLoader.js';
+
+    // Konfiguracja
+    const MODEL_FILE = 'workshop_01_001_KM.fbx';
+    const OVERRIDE_MATERIALS = true; // ustaw na false, aby zachować oryginalne materiały
+    
+    // Domyślny materiał (używany gdy OVERRIDE_MATERIALS = true)
+    const DEFAULT_MATERIAL = {
+        color: 0x808080,     // kolor szary
+        roughness: 0.7,      // szorstkość powierzchni
+        metalness: 0.3       // metaliczność
+    };
 
     let camera, scene, renderer, controls;
     init();
@@ -91,42 +102,47 @@
         
         // Loader FBX
         const loader = new FBXLoader();
-        loader.load('workshop_01_001_KM.fbx',
+        console.log('Inicjalizacja ładowania modelu...');
+        const fbxPath = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? MODEL_FILE
+            : '/three-fbx/' + MODEL_FILE;
+        console.log('Próba załadowania pliku:', fbxPath);
+        loader.load(fbxPath,
             function (object) {
-                // Tworzymy nowy, jednolity materiał
-                const uniformMaterial = new THREE.MeshStandardMaterial({
-                    color: 0x808080,  // Kolor szary
-                    roughness: 0.7,    // Szorstkość powierzchni
-                    metalness: 0.3     // Metaliczność
-                });
+                console.log('Model załadowany pomyślnie!');
+                console.log('Obiekt:', object);
+                // Najpierw dodaj obiekt do sceny
+                scene.add(object);
+
+                // Tworzymy nowy, jednolity materiał (jeśli jest włączone nadpisywanie)
+                const uniformMaterial = OVERRIDE_MATERIALS ? 
+                    new THREE.MeshStandardMaterial(DEFAULT_MATERIAL) : null;
 
                 // Analizuj strukturę modelu
                 const sceneTree = document.getElementById('scene-tree');
                 const modelInfo = new Map();
 
                 object.traverse(function (child) {
+                    const parentName = child.parent ? child.parent.name || 'Unnamed Group' : 'Root';
+                    
+                    if (!modelInfo.has(parentName)) {
+                        modelInfo.set(parentName, { meshes: [], bones: [], markers: [] });
+                    }
+                    
                     if (child.isMesh) {
                         child.castShadow = true;
                         child.receiveShadow = true;
-                        child.material = uniformMaterial;
-                        
-                        // Zapisz informację o meshu
-                        const parentName = child.parent ? child.parent.name || 'Unnamed Group' : 'Root';
-                        if (!modelInfo.has(parentName)) {
-                            modelInfo.set(parentName, { meshes: [], bones: [], markers: [] });
+                        if (OVERRIDE_MATERIALS) {
+                            child.material = uniformMaterial;
                         }
                         modelInfo.get(parentName).meshes.push(child.name || 'Unnamed Mesh');
-                    } else if (child.isBone) {
-                        const parentName = child.parent ? child.parent.parent?.name || 'Unnamed Armature' : 'Root';
-                        if (!modelInfo.has(parentName)) {
-                            modelInfo.set(parentName, { meshes: [], bones: [], markers: [] });
-                        }
+                    } 
+                    
+                    if (child.type === 'Bone') {
                         modelInfo.get(parentName).bones.push(child.name || 'Unnamed Bone');
-                    } else if (child.name && child.name.toLowerCase().includes('marker')) {
-                        const parentName = child.parent ? child.parent.name || 'Unnamed Group' : 'Root';
-                        if (!modelInfo.has(parentName)) {
-                            modelInfo.set(parentName, { meshes: [], bones: [], markers: [] });
-                        }
+                    } 
+                    
+                    if (child.name && child.name.toLowerCase().includes('marker')) {
                         modelInfo.get(parentName).markers.push(child.name);
                     }
                 });
@@ -161,13 +177,14 @@
                     
                     li.appendChild(ul);
                     sceneTree.appendChild(li);
-                });
+                }
+
                 // ukryj spinner i przestań animować dots
                 const infoEl = document.getElementById('info');
                 document.getElementById('spinner').style.display = 'none';
                 infoEl.classList.remove('processing');
-                scene.add(object);
-                infoEl.innerText = 'Wyświetlanie pliku FBX: workshop_01_001.fbx';
+                infoEl.innerText = 'Wyświetlanie pliku FBX: ' + MODEL_FILE;
+                
                 // centrowanie kamery
                 const box = new THREE.Box3().setFromObject(object);
                 const center = box.getCenter(new THREE.Vector3());
@@ -175,6 +192,7 @@
                 controls.target.copy(center);
             },
             function (xhr) {
+                console.log('Postęp ładowania:', xhr.loaded, '/', xhr.total);
                 const percent = (xhr.loaded / xhr.total) * 100;
                 const infoEl = document.getElementById('info');
                 if (percent < 100) {
@@ -187,6 +205,7 @@
             },
             function (error) {
                 console.error('Błąd ładowania FBX:', error);
+                console.error('Pełny stack trace:', error.stack);
                 document.getElementById('info').innerText = 'Błąd ładowania modelu';
             }
         );
