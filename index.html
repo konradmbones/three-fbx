@@ -17,7 +17,7 @@
     </style>
 </head>
 <body>
-    <div id="info">Wyświetlanie pliku FBX: <b>workshop_01_001.fbx</b></div>
+    <div id="info">Wyświetlanie pliku FBX: <b>workshop_01_001_KM.fbx</b></div>
     <div id="spinner"></div>
     <script type="importmap">
     {
@@ -57,7 +57,7 @@
         
         // Loader FBX
         const loader = new FBXLoader();
-        loader.load('workshop_01_001.fbx',
+        loader.load('workshop_01_001_KM.fbx',
             function (object) {
                 object.traverse(function (child) {
                     if (child.isMesh) {
