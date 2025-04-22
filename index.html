@@ -66,7 +66,7 @@
     import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/loaders/FBXLoader.js';
 
     // Konfiguracja
-    const MODEL_FILE = 'workshop_01_001_KM.fbx';
+    const MODEL_FILE = 'workshop_01_001_30FPS.fbx';
     const OVERRIDE_MATERIALS = true; // ustaw na false, aby zachować oryginalne materiały
     
     // Domyślny materiał (używany gdy OVERRIDE_MATERIALS = true)
@@ -76,7 +76,8 @@
         metalness: 0.3       // metaliczność
     };
 
-    let camera, scene, renderer, controls;
+    let camera, scene, renderer, controls, mixer;
+    const clock = new THREE.Clock();
     init();
     animate();
 
@@ -120,7 +121,17 @@
                 // Najpierw dodaj obiekt do sceny
                 scene.add(object);
 
-                // Tworzymy nowy, jednolity materiał (jeśli jest włączone nadpisywanie)
+                // Dodaj animacje
+                mixer = new THREE.AnimationMixer(object);
+                const animations = object.animations;
+                if (animations && animations.length) {
+                    animations.forEach((clip) => {
+                        mixer.clipAction(clip).play();
+                    });
+                    console.log(`Załadowano ${animations.length} animacji`);
+                }
+
+                // Zastosuj materiał do wszystkich meshy jeśli OVERRIDE_MATERIALS jest truewłączone nadpisywanie)
                 const uniformMaterial = OVERRIDE_MATERIALS ? 
                     new THREE.MeshStandardMaterial(DEFAULT_MATERIAL) : null;
 
@@ -227,6 +238,8 @@
 
     function animate() {
         requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+        if (mixer) mixer.update(delta);
         if (controls) controls.update();
         renderer.render(scene, camera);
     }
