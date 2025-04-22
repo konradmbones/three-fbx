@@ -4,26 +4,84 @@
     <meta charset="UTF-8">
     <title>Podgląd FBX z three.js</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
     <style>
-        body { margin: 0; overflow: hidden; background: #222; }
-        #info { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 1.2rem; z-index: 1; }
+        body { margin: 0; }
         canvas { display: block; }
-        #scene-info {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.7);
+        #info {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
             color: #fff;
-            padding: 15px;
+            font-size: 1.2rem;
+            z-index: 1;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
             border-radius: 5px;
             font-family: monospace;
-            max-width: 300px;
-            max-height: 80vh;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 3px solid rgba(255, 69, 0, 0.2);
+            border-top: 3px solid #FF4500;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        #scene-info {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            font-family: monospace;
+            font-size: 13px;
+            border-radius: 5px;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        #scene-info.collapsed {
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        #scene-info.expanded {
+            padding: 20px;
+            max-height: 90vh;
             overflow-y: auto;
+            cursor: default;
+        }
+
+        #scene-info-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        #scene-info-content {
+            display: none;
+        }
+
+        #scene-info.expanded #scene-info-content {
+            display: block;
         }
         #scene-info h3 {
             margin: 0 0 10px 0;
-            font-size: 14px;
+            font-size: 16px;
         }
         #scene-info ul {
             list-style: none;
@@ -32,26 +90,104 @@
         }
         #scene-info li {
             margin: 5px 0;
-            padding-left: 15px;
-            font-size: 12px;
+            padding-left: 10px;
+            border-left: 2px solid #666;
         }
-        #scene-info .mesh { color: #8ff; }
+        #scene-info .mesh { color: #8f8; }
         #scene-info .bone { color: #f8f; }
         #scene-info .marker { color: #ff8; }
-        /* spinner */
-        #spinner { position: absolute; bottom: 80px; left: 50%; width: 40px; height: 40px; margin-left: -20px; border: 4px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; z-index: 1; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        /* animated dots for processing */
-        #info.processing::after { content: ''; margin-left: 4px; animation: dots 1s steps(1,end) infinite; }
-        @keyframes dots { 0% { content: ''; } 33% { content: '.'; } 66% { content: '..'; } 100% { content: '...'; } }
+        
+            content: '';
+            margin-left: 4px;
+            animation: dots 1s steps(1,end) infinite;
+        }
+        @keyframes dots {
+            0% { content: ''; }
+            33% { content: '.'; }
+            66% { content: '..'; }
+            100% { content: '...'; }
+        }
+
+        /* Animation controls */
+        #animation-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+            visibility: hidden;
+        }
+
+        #play-pause {
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wGHT' 400, 'GRAD' 0, 'opsz' 24;
+            color: white;
+            font-size: 24px;
+        }
+
+        #timeline-slider {
+            width: 200px;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #4b5563;
+            outline: none;
+            border-radius: 2px;
+            margin: 0 10px;
+        }
+
+        #timeline-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        #timeline-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        #frame-counter {
+            color: white;
+            font-family: monospace;
+            min-width: 70px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
     <div id="info">Wczytywanie modelu...</div>
-    <div id="spinner"></div>
-    <div id="scene-info">
-        <h3>Struktura modelu:</h3>
-        <ul id="scene-tree"></ul>
+    <div id="loading"></div>
+    <div id="scene-info" class="collapsed">
+        <div id="scene-info-header">Struktura modelu</div>
+        <div id="scene-info-content"></div>
+    </div>
+    <div id="animation-controls">
+        <button id="play-pause">
+            <span class="material-symbols-outlined">play_arrow</span>
+        </button>
+        <input id="timeline-slider" type="range" min="0" max="100" value="0">
+        <span id="frame-counter">0/100</span>
     </div>
     <script type="importmap">
     {
@@ -68,41 +204,82 @@
     // Konfiguracja
     const DEBUGGING = false; // ustaw na true, aby włączyć informacje debugowania
     const MODEL_FILE = 'workshop_01_001_30FPS.fbx';
-    //const MODEL_FILE = 'workshop_01_001.fbx';
     const OVERRIDE_MATERIALS = true; // ustaw na false, aby zachować oryginalne materiały
+    const BACKGROUND_COLOR = 0xcccccc; // biały
+    const MODEL_COLOR = 0xFF4500; // pomarańczowy
+    const SHADOWS_ENABLED = false; // włącz/wyłącz cienie
     
     // Domyślny materiał (używany gdy OVERRIDE_MATERIALS = true)
     const DEFAULT_MATERIAL = {
-        color: 0x808080,     // kolor szary
+        color: MODEL_COLOR,  // kolor modelu
         roughness: 0.7,      // szorstkość powierzchni
         metalness: 0.3       // metaliczność
     };
 
     let camera, scene, renderer, controls, mixer;
     const clock = new THREE.Clock();
+    let isPlaying = false;
+    let currentFrame = 0;
+    let maxFrame = 0;
+    let animationAction;
     init();
     animate();
 
     function init() {
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x222222);
+        scene.background = new THREE.Color(BACKGROUND_COLOR);
 
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(2, 2, 4);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-        scene.add(ambientLight);
-
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        directionalLight.position.set(10, 10, 10);
+        // Światło kierunkowe
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(3, 3, 3);
         scene.add(directionalLight);
+
+        if (SHADOWS_ENABLED) {
+            directionalLight.castShadow = true;
+            // Popraw jakość cieni
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            // Dostosuj kamerę cieni
+            directionalLight.shadow.camera.near = 1;
+            directionalLight.shadow.camera.far = 10;
+            directionalLight.shadow.camera.left = -5;
+            directionalLight.shadow.camera.right = 5;
+            directionalLight.shadow.camera.top = 5;
+            directionalLight.shadow.camera.bottom = -5;
+            directionalLight.shadow.bias = -0.001; // Zapobiega artefaktom cieni
+        }
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = SHADOWS_ENABLED;
+        if (SHADOWS_ENABLED) {
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        }
         document.body.appendChild(renderer.domElement);
+
+        // Dodaj podłogę
+        if (SHADOWS_ENABLED) {
+            const groundGeometry = new THREE.PlaneGeometry(20, 20);
+            const groundMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xcccccc,
+                roughness: 1,
+                metalness: 0
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+        }
 
         controls = new OrbitControls(camera, renderer.domElement);
         
+        // Pokaż kółko ładowania
+        document.getElementById('loading').style.display = 'block';
+
         // Loader FBX
         const loader = new FBXLoader();
         if (DEBUGGING) console.log('Inicjalizacja ładowania modelu...');
@@ -124,87 +301,93 @@
                     console.log('Model załadowany pomyślnie!');
                     console.log('Obiekt:', object);
                 }
-                // Najpierw dodaj obiekt do sceny
-                scene.add(object);
-
-                // Dodaj animacje
-                mixer = new THREE.AnimationMixer(object);
-                const animations = object.animations;
-                if (animations && animations.length) {
-                    animations.forEach((clip) => {
-                        mixer.clipAction(clip).play();
-                    });
-                    if (DEBUGGING) console.log(`Załadowano ${animations.length} animacji`);
-                }
-
-                // Zastosuj materiał do wszystkich meshy jeśli OVERRIDE_MATERIALS jest truewłączone nadpisywanie)
-                const uniformMaterial = OVERRIDE_MATERIALS ? 
-                    new THREE.MeshStandardMaterial(DEFAULT_MATERIAL) : null;
-
-                // Analizuj strukturę modelu
-                const sceneTree = document.getElementById('scene-tree');
-                const modelInfo = new Map();
-
-                object.traverse(function (child) {
-                    const parentName = child.parent ? child.parent.name || 'Unnamed Group' : 'Root';
-                    
-                    if (!modelInfo.has(parentName)) {
-                        modelInfo.set(parentName, { meshes: [], bones: [], markers: [] });
-                    }
-                    
+                // Włącz rzucanie cieni dla wszystkich meshy w modelu
+                object.traverse(function(child) {
                     if (child.isMesh) {
                         child.castShadow = true;
                         child.receiveShadow = true;
-                        if (OVERRIDE_MATERIALS) {
-                            child.material = uniformMaterial;
-                        }
-                        modelInfo.get(parentName).meshes.push(child.name || 'Unnamed Mesh');
-                    } 
-                    
-                    if (child.type === 'Bone') {
-                        modelInfo.get(parentName).bones.push(child.name || 'Unnamed Bone');
-                    } 
-                    
-                    if (child.name && child.name.toLowerCase().includes('marker')) {
-                        modelInfo.get(parentName).markers.push(child.name);
                     }
                 });
 
-                // Wyświetl informacje w panelu
-                sceneTree.innerHTML = '';
-                for (const [groupName, info] of modelInfo) {
-                    const li = document.createElement('li');
-                    li.innerHTML = `<strong>${groupName}</strong>`;
-                    const ul = document.createElement('ul');
-                    
-                    if (info.meshes.length > 0) {
-                        const meshLi = document.createElement('li');
-                        meshLi.className = 'mesh';
-                        meshLi.textContent = `Meshes (${info.meshes.length}): ${info.meshes.join(', ')}`;
-                        ul.appendChild(meshLi);
-                    }
-                    
-                    if (info.bones.length > 0) {
-                        const boneLi = document.createElement('li');
-                        boneLi.className = 'bone';
-                        boneLi.textContent = `Bones (${info.bones.length}): ${info.bones.join(', ')}`;
-                        ul.appendChild(boneLi);
-                    }
-                    
-                    if (info.markers.length > 0) {
-                        const markerLi = document.createElement('li');
-                        markerLi.className = 'marker';
-                        markerLi.textContent = `Markers (${info.markers.length}): ${info.markers.join(', ')}`;
-                        ul.appendChild(markerLi);
-                    }
-                    
-                    li.appendChild(ul);
-                    sceneTree.appendChild(li);
+                // Dodaj obiekt do sceny
+                scene.add(object);
+
+                // Dodaj podłogę po załadowaniu modelu
+                if (SHADOWS_ENABLED) {
+                    const floor = new THREE.Mesh(
+                        new THREE.PlaneGeometry(20, 20),
+                        new THREE.ShadowMaterial({
+                            opacity: 0.2,
+                            transparent: true,
+                            side: THREE.DoubleSide
+                        })
+                    );
+                    floor.rotation.x = -Math.PI / 2;
+                    floor.position.y = 0;
+                    floor.receiveShadow = true;
+                    scene.add(floor);
                 }
 
-                // ukryj spinner i przestań animować dots
+                // Dodaj animacje
+                if (object.animations.length > 0) {
+                    mixer = new THREE.AnimationMixer(object);
+                    animationAction = mixer.clipAction(object.animations[0]);
+                    maxFrame = Math.floor(object.animations[0].duration * 30); // Zakładamy 30 FPS
+                    document.getElementById('frame-counter').innerText = `0 / ${maxFrame}`;
+                    document.getElementById('timeline-slider').max = maxFrame.toString();
+                    document.getElementById('animation-controls').style.visibility = 'visible';
+                    
+                    // Zatrzymaj animację na starcie
+                    animationAction.play();
+                    animationAction.paused = true;
+                    if (DEBUGGING) console.log(`Załadowano ${object.animations.length} animacji`);
+                }
+
+                // Zastosuj materiał do wszystkich meshy jeśli OVERRIDE_MATERIALS jest true
+                const uniformMaterial = OVERRIDE_MATERIALS ? 
+                    new THREE.MeshStandardMaterial(DEFAULT_MATERIAL) : null;
+
+                // Wyświetl strukturę modelu
+                function displayModelStructure(object, indent = '') {
+                    let structure = '';
+                    object.traverse(function(child) {
+                        structure += `${indent}${child.type}: ${child.name}\n`;
+                    });
+                    document.getElementById('scene-info-content').innerText = structure;
+                }
+
+                // Wyświetl strukturę modelu
+                displayModelStructure(object);
+
+                // Obsługa zwijania/rozwijania struktury modelu
+                document.getElementById('scene-info-header').addEventListener('click', function() {
+                    const sceneInfo = document.getElementById('scene-info');
+                    if (sceneInfo.classList.contains('collapsed')) {
+                        sceneInfo.classList.remove('collapsed');
+                        sceneInfo.classList.add('expanded');
+                    } else {
+                        sceneInfo.classList.remove('expanded');
+                        sceneInfo.classList.add('collapsed');
+                    }
+                });
+
+                // Zastosuj materiały i cienie
+                object.traverse(function (child) {
+                    if (SHADOWS_ENABLED && child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                    if (child.isMesh && OVERRIDE_MATERIALS) {
+                        child.material = uniformMaterial;
+                    }
+                });
+
+                if (DEBUGGING) console.log('Model przetworzony');
+
+
+                // ukryj loading i przestań animować dots
                 const infoEl = document.getElementById('info');
-                document.getElementById('spinner').style.display = 'none';
+                document.getElementById('loading').style.display = 'none';
                 infoEl.classList.remove('processing');
                 infoEl.innerText = 'Wyświetlanie pliku FBX: ' + MODEL_FILE;
                 
@@ -246,10 +429,58 @@
     function animate() {
         requestAnimationFrame(animate);
         const delta = clock.getDelta();
-        if (mixer) mixer.update(delta);
-        if (controls) controls.update();
+
+        if (mixer && isPlaying) {
+            mixer.update(delta);
+            currentFrame = Math.floor(mixer.time * 30); // Zakładamy 30 FPS
+            document.getElementById('frame-counter').innerText = `${currentFrame} / ${maxFrame}`;
+            document.getElementById('timeline-slider').value = currentFrame.toString();
+
+            // Zatrzymaj animację gdy dojdzie do końca
+            if (currentFrame >= maxFrame) {
+                isPlaying = false;
+                refreshPlayButton();
+                mixer.setTime(0);
+            }
+        }
+
+        controls.update();
         renderer.render(scene, camera);
     }
+
+    function refreshPlayButton() {
+        const button = document.getElementById('play-pause');
+        const icon = button.querySelector('.material-symbols-outlined');
+        icon.textContent = isPlaying ? 'pause' : 'play_arrow';
+    }
+
+    // Event listeners dla kontrolek
+    document.getElementById('play-pause').addEventListener('click', () => {
+        isPlaying = !isPlaying;
+        if (mixer) {
+            animationAction.paused = !isPlaying;
+            refreshPlayButton();
+        }
+    });
+
+    document.getElementById('timeline-slider').addEventListener('input', (e) => {
+        const frame = parseInt(e.target.value);
+        currentFrame = frame;
+        document.getElementById('frame-counter').innerText = `${frame} / ${maxFrame}`;
+        if (mixer) {
+            mixer.setTime(frame / 30); // Zakładamy 30 FPS
+        }
+    });
+
+    // Obsługa spacji do play/pause
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && mixer) {
+            isPlaying = !isPlaying;
+            animationAction.paused = !isPlaying;
+            refreshPlayButton();
+            e.preventDefault(); // Zapobiegaj przewijaniu strony
+        }
+    });
     </script>
 </body>
 </html>
