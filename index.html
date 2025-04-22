@@ -179,7 +179,7 @@
     <div id="info">Wczytywanie modelu...</div>
     <div id="loading"></div>
     <div id="scene-info" class="collapsed">
-        <div id="scene-info-header">Struktura modelu</div>
+        <div id="scene-info-header">Scene Structure</div>
         <div id="scene-info-content"></div>
     </div>
     <div id="animation-controls">
@@ -347,11 +347,18 @@
                 const uniformMaterial = OVERRIDE_MATERIALS ? 
                     new THREE.MeshStandardMaterial(DEFAULT_MATERIAL) : null;
 
-                // Wyświetl strukturę modelu
+                // Wyświetl strukturę sceny
                 function displayModelStructure(object, indent = '') {
                     let structure = '';
+                    // Najpierw znajdź wszystkie modele (Mesh)
                     object.traverse(function(child) {
-                        structure += `${indent}${child.type}: ${child.name}\n`;
+                        if (child.isMesh && child.parent) {
+                            // Dodaj nazwę rodzica (grupy/modelu) tylko jeśli jeszcze nie była dodana
+                            const parentName = child.parent.name || 'Unnamed Model';
+                            if (!structure.includes(parentName)) {
+                                structure += `${indent}${parentName}\n`;
+                            }
+                        }
                     });
                     document.getElementById('scene-info-content').innerText = structure;
                 }
