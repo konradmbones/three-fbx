@@ -66,6 +66,7 @@
     import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/loaders/FBXLoader.js';
 
     // Konfiguracja
+    const DEBUGGING = false; // ustaw na true, aby włączyć informacje debugowania
     const MODEL_FILE = 'workshop_01_001_30FPS.fbx';
     //const MODEL_FILE = 'workshop_01_001.fbx';
     const OVERRIDE_MATERIALS = true; // ustaw na false, aby zachować oryginalne materiały
@@ -104,7 +105,7 @@
         
         // Loader FBX
         const loader = new FBXLoader();
-        console.log('Inicjalizacja ładowania modelu...');
+        if (DEBUGGING) console.log('Inicjalizacja ładowania modelu...');
         
         // Ustal ścieżkę do pliku w zależności od środowiska
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -112,13 +113,17 @@
         const fbxPath = isLocal ? MODEL_FILE : `https://media.githubusercontent.com/media/konradmakosa/three-fbx/main/${MODEL_FILE}`;
         
         // Logowanie informacji o środowisku
-        console.log('Hostname:', window.location.hostname);
-        console.log('Tryb lokalny:', isLocal);
-        console.log('Ścieżka do pliku:', fbxPath);
+        if (DEBUGGING) {
+            console.log('Hostname:', window.location.hostname);
+            console.log('Tryb lokalny:', isLocal);
+            console.log('Ścieżka do pliku:', fbxPath);
+        }
         loader.load(fbxPath,
             function (object) {
-                console.log('Model załadowany pomyślnie!');
-                console.log('Obiekt:', object);
+                if (DEBUGGING) {
+                    console.log('Model załadowany pomyślnie!');
+                    console.log('Obiekt:', object);
+                }
                 // Najpierw dodaj obiekt do sceny
                 scene.add(object);
 
@@ -129,7 +134,7 @@
                     animations.forEach((clip) => {
                         mixer.clipAction(clip).play();
                     });
-                    console.log(`Załadowano ${animations.length} animacji`);
+                    if (DEBUGGING) console.log(`Załadowano ${animations.length} animacji`);
                 }
 
                 // Zastosuj materiał do wszystkich meshy jeśli OVERRIDE_MATERIALS jest truewłączone nadpisywanie)
@@ -210,7 +215,7 @@
                 controls.target.copy(center);
             },
             function (xhr) {
-                console.log('Postęp ładowania:', xhr.loaded, '/', xhr.total);
+                if (DEBUGGING) console.log('Postęp ładowania:', xhr.loaded, '/', xhr.total);
                 const percent = (xhr.loaded / xhr.total) * 100;
                 const infoEl = document.getElementById('info');
                 if (percent < 100) {
@@ -222,8 +227,9 @@
                 }
             },
             function (error) {
+                // Błędy zawsze pokazujemy, niezależnie od DEBUGGING
                 console.error('Błąd ładowania FBX:', error);
-                console.error('Pełny stack trace:', error.stack);
+                if (DEBUGGING) console.error('Pełny stack trace:', error.stack);
                 document.getElementById('info').innerText = 'Błąd ładowania modelu';
             }
         );
