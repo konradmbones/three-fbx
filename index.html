@@ -314,15 +314,7 @@
                 // Dodaj obiekt do sceny
                 scene.add(object);
 
-                // Dodaj helper do wizualizacji kości
-                const skeletonHelper = new THREE.SkeletonHelper(object);
-                skeletonHelper.material.linewidth = 5; // grubsze linie
-                skeletonHelper.material.color.setHex(0xffffff); // biały kolor
-                skeletonHelper.visible = false; // domyślnie ukryte
-                scene.add(skeletonHelper);
-
-                // Zapisz referencję do helpera w obiekcie
-                object.userData.skeletonHelper = skeletonHelper;
+                // Helpers będą tworzone per model w displayModelStructure
 
                 // Dodaj podłogę po załadowaniu modelu
                 if (SHADOWS_ENABLED) {
@@ -362,80 +354,151 @@
                 // Wyświetl strukturę sceny
                 function displayModelStructure(object) {
                     const container = document.getElementById('scene-info-content');
-                    container.innerHTML = ''; // Wyczyść kontener
+                    container.innerHTML = '';
 
-                    // Znajdź i pogrupuj wszystkie elementy
-                    const meshes = [];
-                    const bones = [];
-                    const markers = [];
+                    // Grupuj elementy według ich głównego modelu
+                    const modelGroups = new Map(); // Mapa przechowująca grupy model => {mesh, bones}
 
-                    object.traverse(function(child) {
-                        console.log('Object:', child.name, child.type, child);
-                        if (child.isMesh) {
-                            meshes.push(child);
-                            console.log('Added Mesh:', child.name);
-                        } else if (child.type === 'Bone') {
-                            bones.push(child);
-                            // Upewnij się, że kości są widoczne
-                            child.visible = true;
-                            console.log('Added Bone:', child.name);
-                        } else if (child.name && child.name.toLowerCase().includes('marker')) {
-                            markers.push(child);
-                            console.log('Added Marker:', child.name);
+                    // Funkcja do wyodrębnienia nazwy modelu z nazwy elementu
+                    function getModelName(name) {
+                        console.log('Getting model name for:', name);
+                        // Dla postaci (T003LeftHandThumb3 -> T003, T004Hips -> T004)
+                        if (name.startsWith('T003') || name.startsWith('T004')) {
+                            const model = name.substring(0, 4); // Wyciąga T003 lub T004
+                            console.log('Character model found:', model);
+                            return model;
                         }
-                    });
-
-                    // Funkcja pomocnicza do tworzenia sekcji
-                    function createSection(items, className, title) {
-                        if (items.length > 0) {
-                            const section = document.createElement('div');
-                            section.className = className;
-                            section.innerHTML = `<div>${title} (${items.length})</div>`;
-
-                            const list = document.createElement('ul');
-                            list.style.marginLeft = '20px';
-                            list.style.listStyle = 'none';
-                            list.style.padding = '0';
-
-                            items.forEach(item => {
-                                const li = document.createElement('li');
-                                const label = document.createElement('label');
-                                const checkbox = document.createElement('input');
-                                checkbox.type = 'checkbox';
-                                checkbox.checked = className === 'bone' ? false : item.visible;
-                                checkbox.style.marginRight = '8px';
-
-                                checkbox.addEventListener('change', function() {
-                                    if (className === 'mesh') {
-                                        // Dla mesha - zmień tylko widoczność mesha
-                                        item.visible = this.checked;
-                                    } else if (className === 'bone') {
-                                        // Dla kości - zmień widoczność helpera szkieletu
-                                        const helper = object.userData.skeletonHelper;
-                                        if (helper) {
-                                            helper.visible = this.checked;
-                                        }
-                                    } else {
-                                        // Dla markerów
-                                        item.visible = this.checked;
-                                    }
-                                });
-
-                                label.appendChild(checkbox);
-                                label.appendChild(document.createTextNode(item.name || 'Unnamed ' + className));
-                                li.appendChild(label);
-                                list.appendChild(li);
-                            });
-
-                            section.appendChild(list);
-                            container.appendChild(section);
+                        // Dla nazw z podwójnym podkreśleniem (np. 'broom_R__P0014mesh')
+                        else if (name.includes('__')) {
+                            const model = name.split('__')[0];
+                            console.log('Tool model found:', model);
+                            return model;
+                        } 
+                        // Dla pozostałych usuwamy przyrostki
+                        else {
+                            const model = name.replace(/mesh$|root$|endBone$|Position$/, '');
+                            console.log('Other model found:', model);
+                            return model;
                         }
                     }
 
-                    // Utwórz sekcje dla każdego typu
-                    createSection(meshes, 'mesh', 'Meshes');
-                    createSection(bones, 'bone', 'Bones');
-                    createSection(markers, 'marker', 'Markers');
+                    // Najpierw znajdź wszystkie meshe
+                    object.traverse(function(child) {
+                        if (child.isMesh) {
+                            const modelName = getModelName(child.name);
+                            console.log('Found mesh:', child.name, '-> model:', modelName);
+                            if (modelName && !modelGroups.has(modelName)) {
+                                modelGroups.set(modelName, { 
+                                    mesh: child, 
+                                    bones: [],
+                                    helper: null
+                                });
+                                console.log('Created group for model:', modelName);
+                            }
+                        }
+                    });
+
+                    console.log('Created groups for models:', Array.from(modelGroups.keys()));
+
+                    // Potem dodaj kości do odpowiednich grup
+                    object.traverse(function(child) {
+                        if (child.type === 'Bone') {
+                            // Wyciągnij nazwę modelu bezpośrednio z nazwy kości
+                            const modelName = getModelName(child.name);
+                            console.log('Processing bone:', child.name, '-> model:', modelName);
+
+                            if (modelName && modelGroups.has(modelName)) {
+                                const group = modelGroups.get(modelName);
+                                
+                                // Stwórz helper tylko raz dla każdego modelu
+                                const isRootBone = 
+                                    child.name.includes('Hips') || // dla postaci (T003, T004)
+                                    child.name.includes('root') || // dla narzędzi
+                                    child.name.endsWith('_01') || // dla innych modeli
+                                    child.parent.type !== 'Bone'; // ostatnia deska ratunku
+
+                                if (!group.helper && isRootBone) {
+                                    console.log('Creating helper for model:', modelName, 'using bone:', child.name);
+                                    // Znajdź najwyższą kość w hierarchii
+                                    let rootBone = child;
+                                    while (rootBone.parent && rootBone.parent.type === 'Bone') {
+                                        rootBone = rootBone.parent;
+                                    }
+                                    
+                                    const helper = new THREE.SkeletonHelper(rootBone);
+                                    helper.material.linewidth = 10;
+                                    helper.material.color.setHex(0xffffff);
+                                    helper.visible = false;
+                                    scene.add(helper);
+                                    group.helper = helper;
+                                    group.bones.push(rootBone);
+                                    console.log('Helper created for:', modelName, 'using root bone:', rootBone.name);
+                                }
+                            }
+                        }
+                    });
+
+                    // Debug: sprawdź stan grup po dodaniu kości
+                    modelGroups.forEach((group, name) => {
+                        console.log('Final group state:', name, {
+                            hasMesh: !!group.mesh,
+                            hasBones: group.bones.length > 0,
+                            hasHelper: !!group.helper
+                        });
+                    });
+
+                    // Utwórz sekcje dla każdego modelu
+                    modelGroups.forEach((group, modelName) => {
+                        const modelSection = document.createElement('div');
+                        modelSection.className = 'model-group';
+                        modelSection.style.marginBottom = '10px';
+                        modelSection.style.display = 'flex';
+                        modelSection.style.alignItems = 'center';
+                        modelSection.style.gap = '10px';
+
+                        // Nazwa modelu
+                        const nameSpan = document.createElement('span');
+                        nameSpan.textContent = modelName;
+                        nameSpan.style.minWidth = '150px';
+                        modelSection.appendChild(nameSpan);
+
+                        // Checkbox dla mesha
+                        if (group.mesh) {
+                            const meshLabel = document.createElement('label');
+                            meshLabel.style.marginRight = '15px';
+                            const meshCheckbox = document.createElement('input');
+                            meshCheckbox.type = 'checkbox';
+                            meshCheckbox.checked = group.mesh.visible;
+                            meshCheckbox.style.marginRight = '4px';
+
+                            meshCheckbox.addEventListener('change', function() {
+                                group.mesh.visible = this.checked;
+                            });
+
+                            meshLabel.appendChild(meshCheckbox);
+                            meshLabel.appendChild(document.createTextNode('Mesh'));
+                            modelSection.appendChild(meshLabel);
+                        }
+
+                        // Checkbox dla kości
+                        if (group.bones.length > 0 && group.helper) {
+                            const boneLabel = document.createElement('label');
+                            const boneCheckbox = document.createElement('input');
+                            boneCheckbox.type = 'checkbox';
+                            boneCheckbox.checked = false;
+                            boneCheckbox.style.marginRight = '4px';
+
+                            boneCheckbox.addEventListener('change', function() {
+                                group.helper.visible = this.checked;
+                            });
+
+                            boneLabel.appendChild(boneCheckbox);
+                            boneLabel.appendChild(document.createTextNode('Bones'));
+                            modelSection.appendChild(boneLabel);
+                        }
+
+                        container.appendChild(modelSection);
+                    });
 
                     if (DEBUGGING) {
                         console.log(`Found: ${meshes.length} meshes, ${bones.length} bones, ${markers.length} markers`);
