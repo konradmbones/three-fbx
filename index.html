@@ -314,6 +314,15 @@
                 // Dodaj obiekt do sceny
                 scene.add(object);
 
+                // Dodaj helper do wizualizacji kości
+                const skeletonHelper = new THREE.SkeletonHelper(object);
+                skeletonHelper.material.linewidth = 3; // grubsze linie
+                skeletonHelper.visible = true;
+                scene.add(skeletonHelper);
+
+                // Zapisz referencję do helpera w obiekcie, żeby móc go później kontrolować
+                object.userData.skeletonHelper = skeletonHelper;
+
                 // Dodaj podłogę po załadowaniu modelu
                 if (SHADOWS_ENABLED) {
                     const floor = new THREE.Mesh(
@@ -354,45 +363,81 @@
                     const container = document.getElementById('scene-info-content');
                     container.innerHTML = ''; // Wyczyść kontener
 
-                    // Znajdź i pogrupuj wszystkie meshe
+                    // Znajdź i pogrupuj wszystkie elementy
                     const meshes = [];
+                    const bones = [];
+                    const markers = [];
+
                     object.traverse(function(child) {
+                        console.log('Object:', child.name, child.type, child);
                         if (child.isMesh) {
                             meshes.push(child);
+                            console.log('Added Mesh:', child.name);
+                        } else if (child.type === 'Bone') {
+                            bones.push(child);
+                            // Upewnij się, że kości są widoczne
+                            child.visible = true;
+                            console.log('Added Bone:', child.name);
+                        } else if (child.name && child.name.toLowerCase().includes('marker')) {
+                            markers.push(child);
+                            console.log('Added Marker:', child.name);
                         }
                     });
 
-                    // Utwórz sekcję dla meshy
-                    if (meshes.length > 0) {
-                        const meshSection = document.createElement('div');
-                        meshSection.className = 'mesh';
-                        meshSection.innerHTML = `<div>Meshes (${meshes.length})</div>`;
+                    // Funkcja pomocnicza do tworzenia sekcji
+                    function createSection(items, className, title) {
+                        if (items.length > 0) {
+                            const section = document.createElement('div');
+                            section.className = className;
+                            section.innerHTML = `<div>${title} (${items.length})</div>`;
 
-                        const meshList = document.createElement('ul');
-                        meshList.style.marginLeft = '20px';
-                        meshList.style.listStyle = 'none';
-                        meshList.style.padding = '0';
+                            const list = document.createElement('ul');
+                            list.style.marginLeft = '20px';
+                            list.style.listStyle = 'none';
+                            list.style.padding = '0';
 
-                        meshes.forEach(mesh => {
-                            const li = document.createElement('li');
-                            const label = document.createElement('label');
-                            const checkbox = document.createElement('input');
-                            checkbox.type = 'checkbox';
-                            checkbox.checked = mesh.visible;
-                            checkbox.style.marginRight = '8px';
+                            items.forEach(item => {
+                                const li = document.createElement('li');
+                                const label = document.createElement('label');
+                                const checkbox = document.createElement('input');
+                                checkbox.type = 'checkbox';
+                                checkbox.checked = item.visible;
+                                checkbox.style.marginRight = '8px';
 
-                            checkbox.addEventListener('change', function() {
-                                mesh.visible = this.checked;
+                                checkbox.addEventListener('change', function() {
+                                    if (className === 'mesh') {
+                                        // Dla mesha - zmień tylko widoczność mesha
+                                        item.visible = this.checked;
+                                    } else if (className === 'bone') {
+                                        // Dla kości - zmień widoczność helpera szkieletu
+                                        const helper = object.userData.skeletonHelper;
+                                        if (helper) {
+                                            helper.visible = this.checked;
+                                        }
+                                    } else {
+                                        // Dla markerów
+                                        item.visible = this.checked;
+                                    }
+                                });
+
+                                label.appendChild(checkbox);
+                                label.appendChild(document.createTextNode(item.name || 'Unnamed ' + className));
+                                li.appendChild(label);
+                                list.appendChild(li);
                             });
 
-                            label.appendChild(checkbox);
-                            label.appendChild(document.createTextNode(mesh.name || 'Unnamed Mesh'));
-                            li.appendChild(label);
-                            meshList.appendChild(li);
-                        });
+                            section.appendChild(list);
+                            container.appendChild(section);
+                        }
+                    }
 
-                        meshSection.appendChild(meshList);
-                        container.appendChild(meshSection);
+                    // Utwórz sekcje dla każdego typu
+                    createSection(meshes, 'mesh', 'Meshes');
+                    createSection(bones, 'bone', 'Bones');
+                    createSection(markers, 'marker', 'Markers');
+
+                    if (DEBUGGING) {
+                        console.log(`Found: ${meshes.length} meshes, ${bones.length} bones, ${markers.length} markers`);
                     }
                 }
 
