@@ -426,8 +426,12 @@
                                     }
                                     
                                     const helper = new THREE.SkeletonHelper(rootBone);
-                                    helper.material.linewidth = 10;
-                                    helper.material.color.setHex(0xffffff);
+                                    // Wymuszamy jednolity kolor zamiast gradientu
+                                    helper.material = new THREE.LineBasicMaterial({
+                                        linewidth: 10,
+                                        color: 0xffffff,
+                                        depthTest: false  // kości będą zawsze na wierzchu
+                                    });
                                     helper.visible = false;
                                     scene.add(helper);
                                     group.helper = helper;
