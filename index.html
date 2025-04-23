@@ -316,11 +316,12 @@
 
                 // Dodaj helper do wizualizacji kości
                 const skeletonHelper = new THREE.SkeletonHelper(object);
-                skeletonHelper.material.linewidth = 3; // grubsze linie
-                skeletonHelper.visible = true;
+                skeletonHelper.material.linewidth = 5; // grubsze linie
+                skeletonHelper.material.color.setHex(0xffffff); // biały kolor
+                skeletonHelper.visible = false; // domyślnie ukryte
                 scene.add(skeletonHelper);
 
-                // Zapisz referencję do helpera w obiekcie, żeby móc go później kontrolować
+                // Zapisz referencję do helpera w obiekcie
                 object.userData.skeletonHelper = skeletonHelper;
 
                 // Dodaj podłogę po załadowaniu modelu
@@ -401,7 +402,7 @@
                                 const label = document.createElement('label');
                                 const checkbox = document.createElement('input');
                                 checkbox.type = 'checkbox';
-                                checkbox.checked = item.visible;
+                                checkbox.checked = className === 'bone' ? false : item.visible;
                                 checkbox.style.marginRight = '8px';
 
                                 checkbox.addEventListener('change', function() {
