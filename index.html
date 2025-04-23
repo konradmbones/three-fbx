@@ -94,6 +94,8 @@
             border-left: 2px solid #666;
         }
         #scene-info .mesh { color: #8f8; }
+        #scene-info .mesh input[type='checkbox'] { margin-right: 5px; }
+        #scene-info .mesh label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
         #scene-info .bone { color: #f8f; }
         #scene-info .marker { color: #ff8; }
         
@@ -348,19 +350,50 @@
                     new THREE.MeshStandardMaterial(DEFAULT_MATERIAL) : null;
 
                 // Wyświetl strukturę sceny
-                function displayModelStructure(object, indent = '') {
-                    let structure = '';
-                    // Najpierw znajdź wszystkie modele (Mesh)
+                function displayModelStructure(object) {
+                    const container = document.getElementById('scene-info-content');
+                    container.innerHTML = ''; // Wyczyść kontener
+
+                    // Znajdź i pogrupuj wszystkie meshe
+                    const meshes = [];
                     object.traverse(function(child) {
-                        if (child.isMesh && child.parent) {
-                            // Dodaj nazwę rodzica (grupy/modelu) tylko jeśli jeszcze nie była dodana
-                            const parentName = child.parent.name || 'Unnamed Model';
-                            if (!structure.includes(parentName)) {
-                                structure += `${indent}${parentName}\n`;
-                            }
+                        if (child.isMesh) {
+                            meshes.push(child);
                         }
                     });
-                    document.getElementById('scene-info-content').innerText = structure;
+
+                    // Utwórz sekcję dla meshy
+                    if (meshes.length > 0) {
+                        const meshSection = document.createElement('div');
+                        meshSection.className = 'mesh';
+                        meshSection.innerHTML = `<div>Meshes (${meshes.length})</div>`;
+
+                        const meshList = document.createElement('ul');
+                        meshList.style.marginLeft = '20px';
+                        meshList.style.listStyle = 'none';
+                        meshList.style.padding = '0';
+
+                        meshes.forEach(mesh => {
+                            const li = document.createElement('li');
+                            const label = document.createElement('label');
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.checked = mesh.visible;
+                            checkbox.style.marginRight = '8px';
+
+                            checkbox.addEventListener('change', function() {
+                                mesh.visible = this.checked;
+                            });
+
+                            label.appendChild(checkbox);
+                            label.appendChild(document.createTextNode(mesh.name || 'Unnamed Mesh'));
+                            li.appendChild(label);
+                            meshList.appendChild(li);
+                        });
+
+                        meshSection.appendChild(meshList);
+                        container.appendChild(meshSection);
+                    }
                 }
 
                 // Wyświetl strukturę modelu
