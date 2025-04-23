@@ -1,0 +1,81 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
+    
+    <title>Refcams Bones</title>
+  
+    <link href="./index.css" rel="stylesheet">
+</head>
+
+<body class="flex flex-row justify-center">
+
+    <div class="flex flex-col gap-8 m-4 justify-center">
+
+    <h1>Bulk Labeller</h1>
+
+    <div class="border shadow p-2 ">
+        <h2>Copy labels from one move to many moves</h2>
+
+        <p>Enter the move_org_name from which to copy labels:</p>
+        <input spellcheck="false"  class="myinput w-full" type="text" id="label-input_many_moves" placeholder="Enter move_org_name" />
+
+        <p>Upload a one-column CSV file with move_org_names to which labels will be copied:</p>
+        <!-- file input -->
+        <input spellcheck="false"  type="file"  id="file-input_many_moves" accept=".csv,.txt" onchange="readText(event)"/>
+        <p id="file-input_many_moves-output" class="overflow-auto max-h-40 p-2"></p>
+        <!-- submit -->
+         <br>
+         <br>
+        <button id="submit_many_moves" class="mybutton">Submit</button>
+    </div>
+
+
+
+    <div class="border shadow p-2 ">
+        <h2>Propage labels from one move to moves belonging to the same take</h2>
+        
+        <p>Enter the move_org_name from which to copy labels:</p>
+        <input spellcheck="false"  class="myinput w-full" type="text" id="label-input_same_take" placeholder="Enter move_org_name" />
+
+        <!-- submit -->
+        <br>
+        <br>
+        <button id="submit_same_take" class="mybutton">Submit</button>
+    </div>
+
+
+    
+    <div class="border shadow p-2 ">
+        <h2>Propage labels from one move to moves belonging to the same content</h2>
+        
+        <p>Enter the move_org_name from which to copy labels:</p>
+        <input spellcheck="false"  class="myinput w-full" type="text" id="label-input_same_content" placeholder="Enter move_org_name" />
+
+        <!-- submit -->
+        <br>
+        <br>
+        <button id="submit_same_content" class="mybutton">Submit</button>
+    </div>
+
+
+</div>
+
+    <script src="./src/bulk_labeller.ts" type="module"></script>
+
+    <script>
+        async function readText(event) {
+            const file = event.target.files.item(0)
+            const text = await file.text();
+            console.log(text)
+            
+            document.getElementById("file-input_many_moves-output").innerText = text
+        }
+    </script>
+
+
+</body>
+
+</html>

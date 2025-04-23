@@ -1,0 +1,117 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
+
+    <title>Refcams Bones</title>
+    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+
+    <link href="./index.css" rel="stylesheet">
+</head>
+
+<body class="m-4 flex flex-col items-center">
+    <h1 id="title" class="italic m-4"></h1>
+
+    <div id="refcams" class="flex flex-col gap-8  items-center">
+        <div class="border shadow p-2 w-full">
+            <h2>RAW refcams</h2>
+            <div id="refcams-raw-paths"></div>
+            <br>
+            <div id="refcams-raw-videos" class="grid grid-cols-2 gap-1"></div>
+        </div>
+
+        <div class="border shadow p-2 w-full">
+            <h2>ATEM refcams</h2>
+            <div id="refcams-atem-paths"></div>
+            <br>
+            <div id="refcams-atem-videos" class="grid grid-cols-2 gap-1"></div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        function loadVideos(data) {
+            console.log("WOJTEKEVENT:", data)
+            const { videos, move_org_name } = data;
+            const title = document.getElementById("title");
+            title.innerText = move_org_name;
+
+            const refcamsDiv = document.getElementById("refcams");
+
+            refcamsDiv.innerHTML = "";
+
+            // get unique categories
+            let videoCategories = videos.map((v) => v.type);
+            videoCategories = [...new Set(videoCategories)];
+
+            // group videos by category
+            const groupedVideos = videoCategories.map((category) => {
+                return {
+                    category,
+                    videos: videos.filter((v) => v.type === category)
+                }
+            })
+
+            groupedVideos.forEach((gv) => {
+                const category = gv.category;
+                const videos = gv.videos;
+
+                // create div for category
+                const categoryDiv = document.createElement("div");
+                categoryDiv.innerHTML = /*html*/`
+                <div class="border shadow p-2 w-full">
+                    <h2>${category} refcams</h2>
+                    <div>${
+                        videos.map((v) => {
+                            return /*html*/`
+                            <p>${v.path}</p>
+                            `
+                        }).join("")
+                    }</div>
+                    <br>
+                    <div class="grid grid-cols-2 gap-1">${
+                        videos.map((v) => {
+                            return /*html*/`
+                            <video controls src="${v.video}"></video>
+                            `
+                        }).join("")
+                    }</div>
+                </div>
+                `;
+                refcamsDiv.appendChild(categoryDiv);
+            })
+
+            //     // add paths as <p>
+            //     const p = document.createElement("p");
+            //     p.innerText = v.path;
+            //     divRefcamsAtemPaths?.appendChild(p);
+
+            //     // add videos
+            //     const video = document.createElement("video");
+            //     video.controls = true
+            //     video.src = v.video
+            //     divRefcamsAtem?.appendChild(video)
+            // })
+            // raw.forEach((v) => {
+            //     // add paths as <p>
+            //     const p = document.createElement("p");
+            //     p.innerText = v.path;
+            //     divRefcamsRawPaths?.appendChild(p);
+
+            //     // add videos
+            //     const video = document.createElement("video");
+            //     video.controls = true
+            //     video.src = v.video
+            //     divRefcamsRaw?.appendChild(video)
+            // })
+            return "done";
+        }
+        window.loadVideos = loadVideos;
+
+
+    </script>
+</body>
+
+</html>

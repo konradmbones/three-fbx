@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
+
+  <title>Viewer Bones</title>
+
+  <link href="index.css" rel="stylesheet">
+
+
+  <!-- google icons -->
+  <!-- <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings:
+        'FILL' 1,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+    }
+  </style> -->
+
+
+  <!-- ffmpeg -->
+  <!-- <script src="https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd"></script> -->
+
+</head>
+
+<!-- overflow-hidden -->
+
+<body class="m-0 h-screen w-screen overflow-hidden teko-wojtek">
+
+
+
+  <div class="flex flex-col justify-center items-center h-full w-full bg-teal-300 gap-10">
+
+    <!-- <span class="leading-none text-[80px] m-0 p-0 text-white -z-1 pointer-events-none select-none scale-x-150">VIEWER</span> -->
+    <img id="logo" class="invert h-96 m-0 p-0 -z-1 pointer-events-none select-none scale-150" alt="Rigplay">
+
+    <div
+      class="bg-white p-6 flex flex-col justify-center items-center gap-4 shadow shadow-lg rounded-lg border-gray-100 border">
+
+      <!-- <h1 class="text-4xl font-bold">Bones Viewer</h1> -->
+      <form action="/api/login" method="post" class="flex flex-col justify-center items-center gap-4 text-xl w-full z-10">
+
+        <!-- <label for="first">
+                      Username:
+                </label> -->
+        <input spellcheck="false"  type="text" spellcheck="false" id="username" name="username" placeholder="Username" class=" border-gray-100 p-2 border-b-2"
+          required>
+
+        <!-- <label for="password">
+                      Password:
+                </label> -->
+        <input spellcheck="false"  type="password" spellcheck="false" id="password" name="password" placeholder="Password"
+          class=" border-gray-100 p-2  border-b-2" required>
+
+        <!-- <div class=" grow mt-8 w-full h-full		"> -->
+        <button type="submit"
+          class="bg-teal-500 text-white grow mt-2 w-full h-fullborder border-gray-100 rounded-lg p-2 font-bold  transition duration-100 ease-in-out hover:bg-teal-600 hover:shadow-lg"
+          onclick="solve()">
+          Sign in
+        </button>
+        <!-- </div> -->
+      </form>
+
+    </div>
+  </div>
+
+
+  <script type="module">
+    import logo from './images/rigplay1.svg';
+    document.getElementById('logo').src = logo;
+  </script>
+
+</html>
+
+
+<!-- ///////////////////////////////////////////////// -->
+
+<!-- <script type="module" src="./main.ts"></script> -->
+
+</body>
+
+</html>

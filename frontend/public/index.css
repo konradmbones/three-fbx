@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number'] {
+    -webkit-appearance: none;
+    margin: 0;
+    -moz-appearance: textfield !important;
+  } */
+
+  h1 {
+    @apply text-4xl font-bold self-center;
+  }
+
+  h2 {
+    @apply text-2xl font-bold;
+  }
+
+
+}
+
+@layer components {
+  /* This won't be included in your compiled CSS unless you actually use it */
+  .mybutton {
+    @apply bg-teal-500 text-white py-0.5 px-1.5 rounded hover:bg-teal-400 cursor-pointer ;
+  }
+
+  .myinput {
+    @apply border  rounded   px-1 border-gray-400 bg-white text-black;
+  }
+
+  .myselect {
+    @apply border rounded border border-gray-400 leading-none bg-white text-black;
+  }
+
+  .myicon {
+    @apply text-gray-400 leading-[0] text-center hover:text-teal-400;
+  }
+
+  .mycheckbox{
+    @apply  leading-[0] text-center hover:text-teal-400 accent-white;
+  }
+
+  .labeller-thumb-up {
+    @apply text-green-500 hover:text-green-600 ;
+  }
+
+  .labeller-thumb-down {
+    @apply text-red-500 hover:text-red-600;
+  }
+
+  .labeller-thumb-notactive {
+    @apply text-gray-400;
+  }
+}
+
+*:focus {
+  outline: none;
+}
+
+* {
+  /* font monospace */
+  font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  font-size: 14px;
+}
+
+
+.teko-wojtek {
+  font-family: "Teko", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 300;
+  font-style: normal;
+}
+
+/* .slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 20px;
+    background: #d3d3d3;
+    outline: none;
+    opacity: 0.7;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+    line-height: 0;
+  } */
+  
+  .slider:hover {
+    opacity: 1;
+  }
+  
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 50px;
+    width: 15px;
+    height: 15px;
+    background: rgb(20 184 166);
+    cursor: pointer;
+    
+  }
+  
+  .slider::-moz-range-thumb {
+    width: 5px;
+    height: 25px;
+    background: rgb(20 184 166);
+    cursor: pointer;
+  }
+
+
+
+  

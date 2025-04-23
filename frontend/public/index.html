@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
+  
+  <title>Viewer Bones</title>
+
+  <link href="./index.css" rel="stylesheet">
+
+
+  <!-- google icons -->
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+    }
+  </style>
+
+
+  <!-- ffmpeg -->
+  <!-- <script src="https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd"></script> -->
+
+</head>
+
+<!-- overflow-hidden -->
+<body class="m-0 h-screen w-screen overflow-hidden"> 
+
+
+  <!-- loading screen. disabled after everything has loaded-->
+   <div id="loading-screen" class="bg-white/70 z-50 absolute top-0 left-0 w-full h-full"></div>
+
+  <!-- loading spinner -->
+   <div id="spinner"></div>
+  
+
+    
+
+  <!-- //////////////////////////////////////////// -->
+
+
+  <div id="top-level-container" class="flex flex-row h-full w-full">
+
+    <div id="left-pane" class=" w-1/2">
+
+      <div id="left-pane-up" class="h-1/2 w-full overflow-clip">
+        <div id="browser"></div>
+      </div>
+
+      <div name="divider-v"></div>
+
+      <div id="left-pane-down" class=" h-1/2 w-full overflow-auto">
+        <div id="data-analyzer" class="overflow-clip"></div>
+        <div id="metadata-viewer" class="overflow-auto"></div>
+
+      </div>
+
+    </div>
+
+    <div name="divider-h"></div>
+
+    <div id="right-pane" class="w-1/2">
+      
+      <div id="right-pane-up" class="relative h-3/5 w-full overflow-clip">  
+        <canvas id="3d-viewport" class="h-full w-full block z-50" tabIndex="1000"></canvas>
+        <div id="upperbar"  class="absolute top-0 right-0 flex flex-col h-full gap-1 items-end p-1">
+          <div id="logout"></div>
+          <div id="workspace-switch"></div>
+          <div id="browser-type"></div>
+          <div id="show-refcam"></div>
+          <div id="bulk-labeller"></div>
+          <div id="download-anim"></div>
+
+        </div>
+        <div id="timeline" class="absolute bottom-0 " style="visibility: hidden;"></div>
+      </div>
+
+      <div name="divider-v"></div>
+
+      <div id="right-pane-down" class="h-2/5 w-full overflow-auto"> 
+        <div id="labeller"></div>
+      </div> 
+
+    </div>
+  </div>
+
+  <!-- ////////////////////// BUTTON CALLBACKS /////////////////////////// -->
+  
+  <script>
+    /** prevents number input from having length larger than the length of max */
+    function checkLength(e){
+      const maxlength = e.target.max.toString().length;
+
+      const isNumeric = (key) => {
+        return key >= 48 && key <= 57;
+      }
+
+      // if the length of the input is equal to the maxlength of the input and the key pressed is 
+      if(e.target.value.length === maxlength  && isNumeric(e.keyCode)){
+         e.stopPropagation();
+         e.preventDefault();
+         return false;
+      }
+      return true;
+  }
+  </script>
+
+  <!-- ///////////////////////////////////////////////// -->
+
+
+  <script type="module" src="./src/main.ts"></script>
+
+
+
+</body>
+
+</html>
