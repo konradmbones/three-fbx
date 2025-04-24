@@ -1,1 +1,2 @@
 *.fbx filter=lfs diff=lfs merge=lfs -text
+workshop_01_001[[:space:]]CAM[[:space:]]1.mp4 filter=lfs diff=lfs merge=lfs -text
