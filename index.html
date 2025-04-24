@@ -225,19 +225,38 @@
     import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/controls/OrbitControls.js';
     import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/loaders/FBXLoader.js';
 
-    // Konfiguracja
-    const DEBUGGING = false; // ustaw na true, aby włączyć informacje debugowania
-    const MODEL_FILE = 'workshop_01_001_30FPS.fbx';
-    const OVERRIDE_MATERIALS = true; // ustaw na false, aby zachować oryginalne materiały
-    const BACKGROUND_COLOR = 0xcccccc; // biały
-    const MODEL_COLOR = 0xFF4500; // pomarańczowy
-    const SHADOWS_ENABLED = false; // włącz/wyłącz cienie
+    // Konfiguracja aplikacji
+    const CONFIG = {
+        // Debug
+        DEBUGGING: false,
+        
+        // Pliki
+        MODEL_FILE: 'workshop_01_001_30FPS.fbx',
+        VIDEO_FILE: 'workshop_01_001 CAM 1.mp4',
+        
+        // Kolory i materiały
+        BACKGROUND_COLOR: 0xcccccc,
+        MODEL_COLOR: 0xFF4500,
+        REFERENCE_PLANE_COLOR: 0x444444,
+        OVERRIDE_MATERIALS: true,
+        
+        // Wymiary i pozycjonowanie
+        REFERENCE_PLANE: {
+            WIDTH: 400,
+            ASPECT_RATIO: 16/9,
+            DISTANCE: 15,
+            OPACITY: 0.8
+        },
+        
+        // Renderowanie
+        SHADOWS_ENABLED: false
+    };
     
-    // Domyślny materiał (używany gdy OVERRIDE_MATERIALS = true)
+    // Domyślny materiał (używany gdy CONFIG.OVERRIDE_MATERIALS = true)
     const DEFAULT_MATERIAL = {
-        color: MODEL_COLOR,  // kolor modelu
-        roughness: 0.7,      // szorstkość powierzchni
-        metalness: 0.3       // metaliczność
+        color: CONFIG.MODEL_COLOR,
+        roughness: 0.7,
+        metalness: 0.3
     };
 
     let camera, scene, renderer, controls, mixer;
@@ -248,32 +267,64 @@
     let animationAction;
     let referencePlane;
     let isReferencePlaneVisible = false;
+    let videoTexture;
+    let video;
     init();
     animate();
 
     function createReferencePlane() {
-        const aspect = 16/9;
-        const width = 400; // 10x większy rozmiar
-        const height = width / aspect;
+        const width = CONFIG.REFERENCE_PLANE.WIDTH;
+        const height = width / CONFIG.REFERENCE_PLANE.ASPECT_RATIO;
         const geometry = new THREE.PlaneGeometry(width, height);
-        const material = new THREE.MeshBasicMaterial({
-            color: 0x444444,
+        
+        // Najpierw tworzymy płaszczyznę z podstawowym materiałem
+        const tempMaterial = new THREE.MeshBasicMaterial({
+            color: CONFIG.REFERENCE_PLANE_COLOR,
             side: THREE.DoubleSide,
             transparent: true,
-            opacity: 0.5,
-            depthWrite: false // pozwala na prawidłowe renderowanie przezroczystości
+            opacity: CONFIG.REFERENCE_PLANE.OPACITY,
+            depthWrite: false
         });
-        referencePlane = new THREE.Mesh(geometry, material);
+        
+        referencePlane = new THREE.Mesh(geometry, tempMaterial);
         referencePlane.visible = false;
-        referencePlane.renderOrder = -1; // renderuj przed innymi obiektami
+        referencePlane.renderOrder = -1;
         scene.add(referencePlane);
+
+        // Inicjalizacja video i tekstury
+        video = document.createElement('video');
+        video.src = CONFIG.VIDEO_FILE;
+        video.loop = true;
+        video.muted = true;
+        video.playsInline = true;
+        video.crossOrigin = 'anonymous';
+
+        // Czekamy na załadowanie metadanych video
+        video.addEventListener('loadedmetadata', () => {
+            videoTexture = new THREE.VideoTexture(video);
+            videoTexture.minFilter = THREE.LinearFilter;
+            videoTexture.magFilter = THREE.LinearFilter;
+            
+            // Tworzymy nowy materiał z teksturą video
+            const videoMaterial = new THREE.MeshBasicMaterial({
+                map: videoTexture,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: CONFIG.REFERENCE_PLANE.OPACITY,
+                depthWrite: false
+            });
+            
+            // Podmieniamy materiał
+            referencePlane.material.dispose();
+            referencePlane.material = videoMaterial;
+        });
     }
 
     function updateReferencePlanePosition() {
         if (!referencePlane || !referencePlane.visible) return;
         
         // Ustaw płaszczyznę za modelami
-        const distance = 15; // zwiększona odległość, żeby było za modelami
+        const distance = CONFIG.REFERENCE_PLANE.DISTANCE; // odległość za modelami
         const forward = new THREE.Vector3(0, 0, 1);
         forward.applyQuaternion(camera.quaternion);
         
@@ -292,12 +343,15 @@
         referencePlane.visible = isReferencePlaneVisible;
         if (isReferencePlaneVisible) {
             updateReferencePlanePosition();
+            video.play();
+        } else {
+            video.pause();
         }
     }
 
     function init() {
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(BACKGROUND_COLOR);
+        scene.background = new THREE.Color(CONFIG.BACKGROUND_COLOR);
 
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(2, 2, 4);
@@ -307,7 +361,7 @@
         directionalLight.position.set(3, 3, 3);
         scene.add(directionalLight);
 
-        if (SHADOWS_ENABLED) {
+        if (CONFIG.SHADOWS_ENABLED) {
             directionalLight.castShadow = true;
             // Popraw jakość cieni
             directionalLight.shadow.mapSize.width = 2048;
@@ -324,17 +378,17 @@
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = SHADOWS_ENABLED;
-        if (SHADOWS_ENABLED) {
+        renderer.shadowMap.enabled = CONFIG.SHADOWS_ENABLED;
+        if (CONFIG.SHADOWS_ENABLED) {
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         }
         document.body.appendChild(renderer.domElement);
 
         // Dodaj podłogę
-        if (SHADOWS_ENABLED) {
+        if (CONFIG.SHADOWS_ENABLED) {
             const groundGeometry = new THREE.PlaneGeometry(20, 20);
             const groundMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0xcccccc,
+                color: CONFIG.BACKGROUND_COLOR,
                 roughness: 1,
                 metalness: 0
             });
@@ -352,22 +406,22 @@
 
         // Loader FBX
         const loader = new FBXLoader();
-        if (DEBUGGING) console.log('Inicjalizacja ładowania modelu...');
+        if (CONFIG.DEBUGGING) console.log('Inicjalizacja ładowania modelu...');
         
         // Ustal ścieżkę do pliku w zależności od środowiska
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         // Użyj GitHub LFS Media URL
-        const fbxPath = isLocal ? MODEL_FILE : `https://media.githubusercontent.com/media/konradmakosa/three-fbx/main/${MODEL_FILE}`;
+        const fbxPath = isLocal ? CONFIG.MODEL_FILE : `https://media.githubusercontent.com/media/konradmakosa/three-fbx/main/${CONFIG.MODEL_FILE}`;
         
         // Logowanie informacji o środowisku
-        if (DEBUGGING) {
+        if (CONFIG.DEBUGGING) {
             console.log('Hostname:', window.location.hostname);
             console.log('Tryb lokalny:', isLocal);
             console.log('Ścieżka do pliku:', fbxPath);
         }
         loader.load(fbxPath,
             function (object) {
-                if (DEBUGGING) {
+                if (CONFIG.DEBUGGING) {
                     console.log('Model załadowany pomyślnie!');
                     console.log('Obiekt:', object);
                 }
@@ -385,14 +439,10 @@
                 // Helpers będą tworzone per model w displayModelStructure
 
                 // Dodaj podłogę po załadowaniu modelu
-                if (SHADOWS_ENABLED) {
+                if (CONFIG.SHADOWS_ENABLED) {
                     const floor = new THREE.Mesh(
-                        new THREE.PlaneGeometry(20, 20),
-                        new THREE.ShadowMaterial({
-                            opacity: 0.2,
-                            transparent: true,
-                            side: THREE.DoubleSide
-                        })
+                        groundGeometry,
+                        groundMaterial
                     );
                     floor.rotation.x = -Math.PI / 2;
                     floor.position.y = 0;
@@ -412,11 +462,11 @@
                     // Zatrzymaj animację na starcie
                     animationAction.play();
                     animationAction.paused = true;
-                    if (DEBUGGING) console.log(`Załadowano ${object.animations.length} animacji`);
+                    if (CONFIG.DEBUGGING) console.log(`Załadowano ${object.animations.length} animacji`);
                 }
 
                 // Zastosuj materiał do wszystkich meshy jeśli OVERRIDE_MATERIALS jest true
-                const uniformMaterial = OVERRIDE_MATERIALS ? 
+                const uniformMaterial = CONFIG.OVERRIDE_MATERIALS ? 
                     new THREE.MeshStandardMaterial(DEFAULT_MATERIAL) : null;
 
                 // Wyświetl strukturę sceny
@@ -572,7 +622,7 @@
                         container.appendChild(modelSection);
                     });
 
-                    if (DEBUGGING) {
+                    if (CONFIG.DEBUGGING) {
                         console.log(`Found: ${meshes.length} meshes, ${bones.length} bones, ${markers.length} markers`);
                     }
                 }
@@ -594,23 +644,23 @@
 
                 // Zastosuj materiały i cienie
                 object.traverse(function (child) {
-                    if (SHADOWS_ENABLED && child.isMesh) {
+                    if (CONFIG.SHADOWS_ENABLED && child.isMesh) {
                         child.castShadow = true;
                         child.receiveShadow = true;
                     }
-                    if (child.isMesh && OVERRIDE_MATERIALS) {
+                    if (child.isMesh && CONFIG.OVERRIDE_MATERIALS) {
                         child.material = uniformMaterial;
                     }
                 });
 
-                if (DEBUGGING) console.log('Model przetworzony');
+                if (CONFIG.DEBUGGING) console.log('Model przetworzony');
 
 
                 // ukryj loading i przestań animować dots
                 const infoEl = document.getElementById('info');
                 document.getElementById('loading').style.display = 'none';
                 infoEl.classList.remove('processing');
-                infoEl.innerText = 'Wyświetlanie pliku FBX: ' + MODEL_FILE;
+                infoEl.innerText = 'Wyświetlanie pliku FBX: ' + CONFIG.MODEL_FILE;
                 
                 // centrowanie kamery
                 const box = new THREE.Box3().setFromObject(object);
@@ -619,7 +669,7 @@
                 controls.target.copy(center);
             },
             function (xhr) {
-                if (DEBUGGING) console.log('Postęp ładowania:', xhr.loaded, '/', xhr.total);
+                if (CONFIG.DEBUGGING) console.log('Postęp ładowania:', xhr.loaded, '/', xhr.total);
                 const percent = (xhr.loaded / xhr.total) * 100;
                 const infoEl = document.getElementById('info');
                 if (percent < 100) {
@@ -633,7 +683,7 @@
             function (error) {
                 // Błędy zawsze pokazujemy, niezależnie od DEBUGGING
                 console.error('Błąd ładowania FBX:', error);
-                if (DEBUGGING) console.error('Pełny stack trace:', error.stack);
+                if (CONFIG.DEBUGGING) console.error('Pełny stack trace:', error.stack);
                 document.getElementById('info').innerText = 'Błąd ładowania modelu';
             }
         );
@@ -656,6 +706,11 @@
     function animate() {
         requestAnimationFrame(animate);
         const delta = clock.getDelta();
+        
+        // Aktualizacja tekstury video tylko jeśli jest widoczna
+        if (videoTexture && referencePlane.visible) {
+            videoTexture.needsUpdate = true;
+        }
 
         if (mixer && isPlaying) {
             mixer.update(delta);
