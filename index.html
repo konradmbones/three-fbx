@@ -253,31 +253,38 @@
 
     function createReferencePlane() {
         const aspect = 16/9;
-        const width = 5; // możesz dostosować rozmiar
+        const width = 400; // 10x większy rozmiar
         const height = width / aspect;
         const geometry = new THREE.PlaneGeometry(width, height);
         const material = new THREE.MeshBasicMaterial({
             color: 0x444444,
             side: THREE.DoubleSide,
             transparent: true,
-            opacity: 0.5
+            opacity: 0.5,
+            depthWrite: false // pozwala na prawidłowe renderowanie przezroczystości
         });
         referencePlane = new THREE.Mesh(geometry, material);
         referencePlane.visible = false;
+        referencePlane.renderOrder = -1; // renderuj przed innymi obiektami
         scene.add(referencePlane);
     }
 
     function updateReferencePlanePosition() {
         if (!referencePlane || !referencePlane.visible) return;
         
-        // Ustaw płaszczyznę przed modelami
-        const distance = 5; // odległość przed modelami
-        const vector = new THREE.Vector3(0, 0, -distance);
-        vector.applyQuaternion(camera.quaternion);
-        referencePlane.position.copy(camera.position).add(vector);
+        // Ustaw płaszczyznę za modelami
+        const distance = 15; // zwiększona odległość, żeby było za modelami
+        const forward = new THREE.Vector3(0, 0, 1);
+        forward.applyQuaternion(camera.quaternion);
+        
+        // Znajdź punkt docelowy (środek sceny)
+        const target = controls.target.clone();
+        
+        // Ustaw płaszczyznę za punktem docelowym
+        referencePlane.position.copy(target).add(forward.multiplyScalar(distance));
         
         // Ustaw rotację prostopadłą do kamery
-        referencePlane.quaternion.copy(camera.quaternion);
+        referencePlane.lookAt(camera.position);
     }
 
     function toggleReferencePlane() {
