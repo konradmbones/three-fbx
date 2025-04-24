@@ -242,9 +242,9 @@
         
         // Wymiary i pozycjonowanie
         REFERENCE_PLANE: {
-            WIDTH: 400,
+            WIDTH: 600,
             ASPECT_RATIO: 16/9,
-            DISTANCE: 15,
+            DISTANCE: 100,
             OPACITY: 0.8
         },
         
@@ -325,7 +325,7 @@
         
         // Ustaw płaszczyznę za modelami
         const distance = CONFIG.REFERENCE_PLANE.DISTANCE; // odległość za modelami
-        const forward = new THREE.Vector3(0, 0, 1);
+        const forward = new THREE.Vector3(0, 0, -1);
         forward.applyQuaternion(camera.quaternion);
         
         // Znajdź punkt docelowy (środek sceny)
