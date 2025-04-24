@@ -175,6 +175,23 @@
             min-width: 70px;
             font-size: 14px;
         }
+
+        #reference-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+        }
+
+        #toggle-reference {
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -188,8 +205,13 @@
         <button id="play-pause">
             <span class="material-symbols-outlined">play_arrow</span>
         </button>
-        <input id="timeline-slider" type="range" min="0" max="100" value="0">
-        <span id="frame-counter">0/100</span>
+        <input type="range" id="timeline-slider" min="0" value="0" step="1">
+        <span id="frame-counter">0 / 0</span>
+    </div>
+    <div id="reference-controls">
+        <button id="toggle-reference">
+            <span class="material-symbols-outlined">videocam</span>
+        </button>
     </div>
     <script type="importmap">
     {
@@ -224,8 +246,47 @@
     let currentFrame = 0;
     let maxFrame = 0;
     let animationAction;
+    let referencePlane;
+    let isReferencePlaneVisible = false;
     init();
     animate();
+
+    function createReferencePlane() {
+        const aspect = 16/9;
+        const width = 5; // możesz dostosować rozmiar
+        const height = width / aspect;
+        const geometry = new THREE.PlaneGeometry(width, height);
+        const material = new THREE.MeshBasicMaterial({
+            color: 0x444444,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.5
+        });
+        referencePlane = new THREE.Mesh(geometry, material);
+        referencePlane.visible = false;
+        scene.add(referencePlane);
+    }
+
+    function updateReferencePlanePosition() {
+        if (!referencePlane || !referencePlane.visible) return;
+        
+        // Ustaw płaszczyznę przed modelami
+        const distance = 5; // odległość przed modelami
+        const vector = new THREE.Vector3(0, 0, -distance);
+        vector.applyQuaternion(camera.quaternion);
+        referencePlane.position.copy(camera.position).add(vector);
+        
+        // Ustaw rotację prostopadłą do kamery
+        referencePlane.quaternion.copy(camera.quaternion);
+    }
+
+    function toggleReferencePlane() {
+        isReferencePlaneVisible = !isReferencePlaneVisible;
+        referencePlane.visible = isReferencePlaneVisible;
+        if (isReferencePlaneVisible) {
+            updateReferencePlanePosition();
+        }
+    }
 
     function init() {
         scene = new THREE.Scene();
@@ -571,6 +632,12 @@
         );
 
         window.addEventListener('resize', onWindowResize);
+
+        // Utwórz płaszczyznę referencyjną
+        createReferencePlane();
+
+        // Dodaj obsługę przycisku referencji
+        document.getElementById('toggle-reference').addEventListener('click', toggleReferencePlane);
     }
 
     function onWindowResize() {
@@ -598,6 +665,9 @@
         }
 
         controls.update();
+        if (referencePlane && referencePlane.visible) {
+            updateReferencePlanePosition();
+        }
         renderer.render(scene, camera);
     }
 
